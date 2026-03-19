@@ -724,7 +724,19 @@ function loginAs(name){
   buildToday();buildCal();buildWeek();buildStats();buildHistory();
   checkNotif();notifTick();
   schedDailyDigest();
-  if(getUrl())setTimeout(syncPull,1200);
+  if(getUrl()){
+    setTimeout(async()=>{
+      try{
+        setSyncDot('yellow','Verificando Sheets…');
+        const r=await fetch(getUrl()+'?action=ping');
+        const d=await r.json();
+        if(d&&d.ok){setSyncDot('green','Conectado ao Sheets');updateSyncUI('ok',true);}
+        else setSyncDot('red','Erro de conexão');
+      }catch(e){setSyncDot('red','Sem conexão com Sheets');}
+      // pull after ping
+      syncPull();
+    },800);
+  }
 }
 
 function logout(){
@@ -1084,7 +1096,8 @@ function saveEv(){
   haptic('medium');clearForm();
   buildCal();showDay();buildStats();buildToday();
   schedNotif(ne,selDate);
-  if(localStorage.getItem(user+'_syncOnSave')!=='0'&&getUrl())syncPush();
+  // Push imediato ao salvar — sem depender de syncOnSave
+  if(getUrl()) syncPushNow(ne.id);
 }
 
 function clearForm(){
@@ -1097,8 +1110,17 @@ function clearForm(){
 function deleteEv(date,idx,after){
   confirm2('Excluir este lembrete?','Excluir',()=>{
     const ev=getEvs(date),rm=ev.splice(idx,1)[0];setEvs(date,ev);
-    if(rm?.id&&getUrl())fetch(getUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',id:rm.id,user})}).catch(()=>{});
     haptic('light');toast('Removido','info');buildCal();buildStats();buildToday();after&&after();
+    // Delete imediato no Sheets
+    if(rm?.id && getUrl()){
+      setSyncDot('yellow','Removendo do Sheets…');
+      fetch(getUrl(),{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'delete',id:rm.id,user})})
+      .then(r=>r.json()).then(d=>{
+        if(d.ok){setSyncDot('green','Removido do Sheets ✓');addLog('✕ Deletado: '+(rm.text||'').slice(0,30));}
+        else setSyncDot('red','Erro ao remover');
+      }).catch(()=>setSyncDot('red','Erro ao remover'));
+    }
   });
 }
 
@@ -1122,7 +1144,7 @@ function saveEdit(){
   setEvs(date,ev);markPend(oldId);closeModal('editModal');
   haptic('light');toast('✓ Atualizado!','success');
   buildCal();showDay();buildWeek();buildStats();buildToday();
-  if(localStorage.getItem(user+'_syncOnSave')!=='0'&&getUrl())syncPush();
+  if(getUrl()) syncPushNow(oldId);
 }
 
 // ══════════════════════════════════════════
@@ -1232,7 +1254,7 @@ function dropOn(tgt){
   if(mv){mv.updatedAt=Date.now();setEvs(dragSrc.date,src);const t=getEvs(tgt);t.push(mv);setEvs(tgt,t);if(mv.id)markPend(mv.id);}
   dragSrc=null;haptic('light');toast('Lembrete movido!','info');
   buildCal();buildWeek();if(selDate)showDay();buildStats();buildToday();
-  if(localStorage.getItem(user+'_syncOnSave')!=='0'&&getUrl())syncPush();
+  if(mv?.id && getUrl()) syncPushNow(mv.id);
 }
 
 // ══════════════════════════════════════════
@@ -1366,7 +1388,13 @@ function expJSON(){dl('agenda_'+user+'.json',JSON.stringify(allEvs(),null,2),'ap
 function dl(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
 function confirmClear(){
   confirm2(`Apagar TODOS os ${allEvs().length} lembretes?`,'Apagar tudo',async()=>{
-    if(getUrl())await fetch(getUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteAll',user})}).catch(()=>{});
+    if(getUrl()){
+      setSyncDot('yellow','Apagando do Sheets…');
+      try{
+        await fetch(getUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'deleteAll',user})});
+        setSyncDot('green','Sheets limpo ✓');
+      }catch(e){setSyncDot('red','Erro ao limpar Sheets');}
+    }
     Object.keys(localStorage).filter(k=>k.startsWith(user+'_ev_')||k.startsWith(user+'_pend_')).forEach(k=>localStorage.removeItem(k));
     toast('Tudo apagado','error');buildCal();buildWeek();buildStats();buildToday();
     selDate=null;document.getElementById('dayCard').style.display='none';document.getElementById('wDayCard').style.display='none';
@@ -1412,6 +1440,35 @@ function findById(id){for(const k of Object.keys(localStorage)){if(!k.startsWith
 function rmById(id){Object.keys(localStorage).forEach(k=>{if(!k.startsWith(user+'_ev_'))return;const d=k.replace(user+'_ev_','');const ev=getEvs(d);const i=ev.findIndex(x=>x.id===id);if(i>-1){ev.splice(i,1);setEvs(d,ev);}});}
 function upsertLocal(r){rmById(r.id);const ev=getEvs(r.date);ev.push({id:r.id,text:r.text,time:r.time||'',repeat:r.repeat||'none',weekday:r.weekday||'0',cat:r.cat||'other',phone:r.phone||'',createdAt:r.createdAt||Date.now(),updatedAt:r.updatedAt||Date.now()});setEvs(r.date,ev);}
 
+// Push imediato de um evento específico
+async function syncPushNow(id) {
+  const url = getUrl(); if(!url) return;
+  const {ev, date} = findById(id); if(!ev) return;
+  try {
+    setSyncDot('yellow','Salvando no Sheets…');
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        action: 'push',
+        user,
+        events: [{...ev, id, user, date}]
+      })
+    });
+    const data = await r.json();
+    if(data.error) throw new Error(data.error);
+    clrPend(id);
+    setLastSync(data.ts || Date.now());
+    setSyncDot('green','Salvo no Sheets ✓');
+    addLog('↑ Salvo: ' + (ev.text||'').slice(0,30));
+  } catch(e) {
+    setSyncDot('red','Erro ao salvar no Sheets');
+    addLog('↑ Erro push: ' + e.message);
+    // mantém como pendente para o próximo sync
+    markPend(id);
+  }
+}
+
 async function syncPull(){
   const url=getUrl();if(!url)return 0;
   try{
@@ -1448,9 +1505,18 @@ async function syncPush(){
 async function syncNow(){
   if(syncing)return;
   if(!getUrl()){toast('Configure o Google Sheets','warn');go('config');return;}
-  syncing=true;document.getElementById('syncBtn').textContent='⟳ …';
-  try{await syncPush();await syncPull();toast('✓ Sincronizado!','success');}
-  finally{syncing=false;document.getElementById('syncBtn').textContent='⟳ Sync';}
+  syncing=true;
+  const btn=document.getElementById('syncBtn');
+  btn.textContent='⟳ …';btn.disabled=true;
+  try{
+    await syncPush();
+    await syncPull();
+    toast('✓ Tudo sincronizado!','success');
+  } catch(e) {
+    toast('Erro de sincronização','error');
+  } finally {
+    syncing=false;btn.textContent='⟳ Sync';btn.disabled=false;
+  }
 }
 function startSync(){stopSync();const m=parseInt(localStorage.getItem(user+'_syncIv')||'5');if(m&&getUrl())syncTimer=setInterval(syncNow,m*60000);}
 function stopSync(){if(syncTimer){clearInterval(syncTimer);syncTimer=null;}}
