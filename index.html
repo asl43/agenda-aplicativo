@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#08090f" id="themeMetaColor">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenda">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<title>Agenda</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg: #08090f;
+  --bg2: #0e1018;
+  --surface: #13151f;
+  --surface2: #1a1d2b;
+  --surface3: #222638;
+  --border: rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.12);
+  --text: #e8eaf0;
+  --text2: #8b90a7;
+  --text3: #555a72;
+  --r: 14px;
+  --shadow: 0 4px 24px rgba(0,0,0,.4);
+
+  /* accent palette */
+  --green: #4ade80;
+  --green2: #86efac;
+  --cyan: #22d3ee;
+  --purple: #a78bfa;
+  --orange: #fb923c;
+  --red: #f87171;
+  --pink: #f472b6;
+
+  /* categories */
+  --cat-work: #22d3ee;
+  --cat-personal: #a78bfa;
+  --cat-health: #4ade80;
+  --cat-other: #fb923c;
+}
+[data-theme="light"] {
+  --bg: #f0f2f8;
+  --bg2: #e8eaf2;
+  --surface: #ffffff;
+  --surface2: #f5f6fb;
+  --surface3: #eceef6;
+  --border: rgba(0,0,0,.07);
+  --border2: rgba(0,0,0,.13);
+  --text: #1a1d2b;
+  --text2: #555a72;
+  --text3: #9399b2;
+  --shadow: 0 4px 24px rgba(0,0,0,.1);
+}
+
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+button,input,select{font-family:inherit}
+
+/* ── BASE ── */
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background .3s, color .3s;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+
+/* ─────────────────────────────────
+   LOGIN
+───────────────────────────────── */
+#loginScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+#loginScreen::before {
+  content:'';
+  position:absolute;
+  width:500px;height:500px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(74,222,128,.12) 0%, transparent 70%);
+  top:-100px;left:-100px;
+  pointer-events:none;
+}
+#loginScreen::after {
+  content:'';
+  position:absolute;
+  width:400px;height:400px;
+  border-radius:50%;
+  background: radial-gradient(circle, rgba(34,211,238,.08) 0%, transparent 70%);
+  bottom:-80px;right:-80px;
+  pointer-events:none;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+  animation: fadeUp .5s ease;
+  position: relative;
+  z-index:1;
+}
+.login-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.login-logo em { color: var(--green); font-style: normal; }
+.login-sub { text-align: center; color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+
+/* profiles grid */
+.profiles-title { font-size: 12px; color: var(--text3); font-weight: 600; letter-spacing:.8px; text-transform:uppercase; margin-bottom:10px; }
+.profiles-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; min-height: 0; }
+.profile-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 100px; padding: 6px 14px 6px 6px;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  transition: all .2s;
+}
+.profile-chip:hover { border-color: var(--green); color: var(--green); }
+.profile-chip .mini-av {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.profile-chip .rm-btn {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 14px; padding: 0 0 0 4px;
+  line-height: 1;
+}
+.profile-chip .rm-btn:hover { color: var(--red); }
+
+/* ── FORMS ── */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+label { font-size: 11px; color: var(--text2); font-weight: 600; letter-spacing:.6px; text-transform:uppercase; }
+input[type=text],input[type=time],input[type=month],input[type=date],select,textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  width: 100%;
+  transition: border .2s, box-shadow .2s;
+  -webkit-appearance: none;
+}
+input:focus,select:focus,textarea:focus { outline:none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(74,222,128,.1); }
+select option { background: var(--surface2); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 11px 20px; border: none; border-radius: 10px;
+  font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all .2s; white-space: nowrap;
+}
+.btn-primary { background: var(--green); color: #08090f; }
+.btn-primary:hover { background: var(--green2); transform:translateY(-1px); box-shadow:0 4px 16px rgba(74,222,128,.3); }
+.btn-ghost { background: var(--surface2); border: 1px solid var(--border2); color: var(--text2); }
+.btn-exit{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);color:var(--red);font-size:13px}.btn-exit:hover{background:rgba(248,113,113,.18)}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); background:var(--surface3); }
+.btn-danger { background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.2); color: var(--red); }
+.btn-danger:hover { background: rgba(248,113,113,.2); }
+.btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+.btn-icon { padding: 9px; width:38px; height:38px; border-radius:9px; }
+
+/* ─────────────────────────────────
+   APP LAYOUT
+───────────────────────────────── */
+#appScreen { display: none; min-height: 100vh; }
+#appScreen.visible { display: flex; flex-direction: column; }
+
+/* TOP NAV */
+.topnav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8,9,15,.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+[data-theme="light"] .topnav { background: rgba(240,242,248,.85); }
+.nav-brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+}
+.nav-brand em { color: var(--green); font-style: normal; }
+.nav-right { display: flex; align-items: center; gap: 10px; }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; color: #08090f;
+  flex-shrink: 0; cursor: pointer;
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 0 24px;
+  gap: 2px;
+}
+.tab-btn {
+  padding: 14px 18px;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text2); font-family: 'Outfit', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  margin-bottom: -1px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+/* CONTENT */
+.tab-content { display: none; padding: 28px 24px; max-width: 780px; margin: 0 auto; width: 100%; }
+.tab-content.active { display: block; animation: fadeUp .3s ease; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 11px; font-weight: 700; letter-spacing:1px;
+  text-transform: uppercase; color: var(--text2);
+  margin-bottom: 18px;
+}
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+.card-header .card-title { margin-bottom:0; }
+
+/* ── MONTH VIEW ── */
+.month-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.month-label { font-family:'Playfair Display',serif; font-size:22px; }
+.weekday-row {
+  display: grid; grid-template-columns: repeat(7,1fr); gap:4px;
+  margin-bottom: 6px;
+}
+.wday {
+  text-align:center; font-size:11px; font-weight:600; color:var(--text3);
+  letter-spacing:.5px; text-transform:uppercase; padding:6px 0;
+}
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.day {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:3px;
+  border-radius:10px; cursor:pointer; font-size:14px; font-weight:500;
+  background:var(--surface2); border:1px solid transparent;
+  transition:all .15s; position:relative; user-select:none;
+}
+.day:hover { border-color:var(--green); color:var(--green); }
+.day.empty { background:transparent; pointer-events:none; }
+.day.today { border-color:var(--cyan)!important; color:var(--cyan); }
+.day.selected { background:var(--green); color:#08090f; font-weight:700; border-color:var(--green); }
+.day-dots { display:flex; gap:2px; position:absolute; bottom:5px; }
+.day-dot { width:4px;height:4px;border-radius:50%; }
+.day.selected .day-dot { opacity:.5; }
+
+/* ── WEEK VIEW ── */
+.week-header { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:8px; }
+.week-col-head {
+  text-align:center; padding:8px 4px; border-radius:8px;
+  font-size:12px; font-weight:600; color:var(--text2);
+}
+.week-col-head.today-col { background:var(--surface2); color:var(--cyan); }
+.week-col-head.selected-col { background:var(--green); color:#08090f; border-radius:8px; }
+.week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.week-day-col {
+  min-height:120px; background:var(--surface2); border-radius:10px;
+  padding:8px; cursor:pointer; border:1px solid transparent; transition:border .15s;
+  position:relative;
+}
+.week-day-col:hover { border-color:var(--green); }
+.week-day-col.today-col { border-color:var(--cyan); }
+.week-day-col.selected-col { border-color:var(--green); }
+.week-event-chip {
+  font-size:11px; font-weight:600; padding:3px 6px; border-radius:5px;
+  margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* ── EVENT FORM ── */
+.form-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+@media(max-width:540px){ .form-grid-2,.form-grid-3{grid-template-columns:1fr} }
+
+/* ── EVENT LIST ── */
+.event-item {
+  display:flex; align-items:flex-start; gap:12px;
+  padding:14px; background:var(--surface2);
+  border-radius:10px; border:1px solid var(--border);
+  margin-bottom:8px; transition:border .15s;
+  animation: fadeUp .2s ease;
+}
+.event-item:hover { border-color:var(--border2); }
+.event-color-bar { width:4px; border-radius:2px; align-self:stretch; flex-shrink:0; min-height:40px; }
+.event-body { flex:1; min-width:0; }
+.event-text { font-size:14px; font-weight:500; }
+.event-meta { font-size:12px; color:var(--text2); margin-top:3px; display:flex; gap:12px; flex-wrap:wrap; }
+.event-actions { display:flex; gap:6px; flex-shrink:0; align-items:flex-start; }
+.badge {
+  display:inline-flex; align-items:center;
+  padding:2px 8px; border-radius:20px;
+  font-size:10px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+}
+
+/* ── SEARCH ── */
+.search-bar {
+  display:flex; gap:10px; align-items:center; margin-bottom:20px;
+}
+.search-input-wrap { position:relative; flex:1; }
+.search-input-wrap svg {
+  position:absolute; left:12px; top:50%; transform:translateY(-50%);
+  color:var(--text3); pointer-events:none;
+}
+.search-input-wrap input { padding-left:38px; }
+.search-result-item {
+  padding:14px; background:var(--surface2);
+  border:1px solid var(--border); border-radius:10px; margin-bottom:8px;
+  cursor:pointer; transition:border .15s;
+}
+.search-result-item:hover { border-color:var(--green); }
+.search-date { font-size:11px; color:var(--text3); margin-bottom:4px; }
+
+/* ── STATS ── */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+@media(max-width:540px){ .stats-grid{grid-template-columns:repeat(2,1fr)} }
+.stat-card {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:12px; padding:18px; text-align:center;
+}
+.stat-num { font-family:'Playfair Display',serif; font-size:30px; line-height:1; }
+.stat-label { font-size:11px; color:var(--text2); margin-top:5px; }
+.cat-legend { display:flex; flex-wrap:wrap; gap:10px; }
+.cat-item { display:flex; align-items:center; gap:6px; font-size:13px; }
+.cat-dot { width:10px;height:10px;border-radius:3px;flex-shrink:0; }
+
+/* ── EXPORT ── */
+.export-btns { display:flex; gap:10px; flex-wrap:wrap; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.7);
+  backdrop-filter:blur(4px); z-index:200;
+  display:flex; align-items:center; justify-content:center;
+  padding:24px; opacity:0; pointer-events:none;
+  transition: opacity .25s;
+}
+.modal-overlay.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:18px; padding:32px; width:100%; max-width:480px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+  transform:translateY(16px); transition:transform .25s;
+  max-height:90vh; overflow-y:auto;
+}
+.modal-overlay.open .modal { transform:translateY(0); }
+.modal-title { font-family:'Playfair Display',serif; font-size:20px; margin-bottom:20px; }
+.modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+
+/* ── CONFIRM MODAL ── */
+.confirm-msg { color:var(--text2); font-size:14px; margin-bottom:20px; line-height:1.6; }
+
+/* ── DRAG INDICATOR ── */
+.event-item.dragging { opacity:.4; }
+.event-item[draggable=true] { cursor:grab; }
+.day.drag-over,.week-day-col.drag-over { border-color:var(--cyan)!important; background:rgba(34,211,238,.08); }
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:24px; right:24px;
+  padding:13px 20px; border-radius:12px;
+  font-size:13px; font-weight:600;
+  transform:translateY(80px); opacity:0;
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  z-index:300; pointer-events:none; max-width:320px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+#toast.show { transform:translateY(0); opacity:1; }
+#toast.success { background:var(--green); color:#08090f; }
+#toast.error { background:var(--red); color:#fff; }
+#toast.info { background:var(--cyan); color:#08090f; }
+
+/* ── NOTIF BANNER ── */
+#notifBanner {
+  background: rgba(167,139,250,.15); border:1px solid rgba(167,139,250,.3);
+  border-radius:10px; padding:12px 16px;
+  font-size:13px; color:var(--text); margin-bottom:16px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+
+/* ── THEME TOGGLE ── */
+.theme-icon { font-size:18px; line-height:1; }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align:center; padding:40px 20px; color:var(--text3); }
+.empty-state .empty-icon { font-size:36px; margin-bottom:10px; }
+.empty-state p { font-size:14px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(10px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50%      { opacity:.5; }
+}
+
+/* ── RESPONSIVE NAV ── */
+@media(max-width:500px){
+  .tabs { padding:0 12px; overflow-x:auto; white-space:nowrap; }
+  .tab-btn { padding:14px 12px; }
+  .topnav { padding:0 16px; }
+  .tab-content { padding:20px 16px; }
+}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;z-index:9999;background:#08090f;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.splash-bg{position:absolute;inset:0;overflow:hidden}
+.particle{position:absolute;border-radius:50%;animation:float linear infinite;opacity:0}
+@keyframes float{0%{transform:translateY(110vh) scale(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-10vh) scale(1.2);opacity:0}}
+.splash-glow{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(74,222,128,.18) 0%,transparent 65%);animation:glowPulse 3s ease-in-out infinite}
+.splash-glow2{position:absolute;top:-80px;right:-80px;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.1) 0%,transparent 65%);animation:glowPulse 3.5s ease-in-out infinite reverse}
+@keyframes glowPulse{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.15);opacity:1}}
+.splash-logo-wrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center}
+.splash-ring{width:120px;height:120px;position:relative;margin-bottom:32px}
+.ring-outer{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(74,222,128,.2);animation:spinRing 4s linear infinite}
+.ring-outer::before{content:"";position:absolute;top:-2px;left:50%;width:8px;height:8px;border-radius:50%;background:var(--green);transform:translateX(-50%);box-shadow:0 0 12px var(--green),0 0 24px var(--green)}
+.ring-middle{position:absolute;inset:14px;border-radius:50%;border:2px solid rgba(34,211,238,.15);animation:spinRing 3s linear infinite reverse}
+.ring-middle::before{content:"";position:absolute;bottom:-2px;left:50%;width:6px;height:6px;border-radius:50%;background:var(--cyan);transform:translateX(-50%);box-shadow:0 0 10px var(--cyan)}
+.ring-inner{position:absolute;inset:28px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 32px rgba(74,222,128,.15)}
+@keyframes spinRing{to{transform:rotate(360deg)}}
+.splash-brand{font-family:"Playfair Display",serif;font-size:42px;letter-spacing:-1px;animation:brandReveal 1s cubic-bezier(.16,1,.3,1) .4s both}
+.splash-brand em{color:var(--green);font-style:normal}
+@keyframes brandReveal{from{opacity:0;transform:translateY(16px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.splash-tagline{color:var(--text2);font-size:14px;margin-top:8px;animation:brandReveal 1s cubic-bezier(.16,1,.3,1) .65s both}
+.splash-progress-wrap{margin-top:48px;width:160px;animation:brandReveal .8s ease .9s both}
+.splash-progress-track{height:3px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.splash-progress-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--green),var(--cyan));width:0%;transition:width .15s linear;box-shadow:0 0 8px var(--green)}
+.splash-progress-label{text-align:center;font-size:11px;color:var(--text3);margin-top:8px;letter-spacing:.5px}
+#splash.exit{animation:splashExit .7s cubic-bezier(.7,0,.3,1) forwards}
+@keyframes splashExit{0%{opacity:1;transform:scale(1)}40%{opacity:1;transform:scale(1.04)}100%{opacity:0;transform:scale(.96);pointer-events:none}}
+/* ── SYNC ── */
+#syncBar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 20px;font-size:12px;border-bottom:1px solid var(--border);background:var(--bg2);min-height:36px}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.sync-dot.yellow{background:#facc15;box-shadow:0 0 6px #facc15;animation:pulse 1.2s infinite}
+.sync-dot.red{background:var(--red)}.sync-dot.gray{background:var(--text3)}
+.sync-info{display:flex;align-items:center;gap:8px;color:var(--text2)}
+.btn-sync{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.2);color:var(--cyan);font-size:13px}.btn-sync:hover{background:rgba(34,211,238,.2)}
+.sync-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:10px;font-size:10px;margin-left:6px}
+.sync-badge.pending{background:rgba(250,204,21,.15);color:#facc15}
+.sync-badge.synced{background:rgba(74,222,128,.12);color:var(--green)}
+.sheets-status{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.conflict-item{padding:14px;background:rgba(250,204,21,.05);border:1px solid rgba(250,204,21,.2);border-radius:10px;margin-bottom:8px}
+.conflict-actions{display:flex;gap:8px;margin-top:10px}
+input[type=url]{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:11px 14px;border-radius:10px;font-size:14px;width:100%;transition:border .2s}
+input[type=url]:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,.1)}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════
+  LOGIN SCREEN
+══════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">Agen<em>da</em></div>
+    <div class="login-sub">Sua agenda pessoal — organizada e bonita</div>
+
+    <div id="savedProfilesWrap" style="display:none;margin-bottom:20px">
+      <div class="profiles-title">Perfis salvos</div>
+      <div class="profiles-grid" id="profilesGrid"></div>
+    </div>
+
+    <div class="field">
+      <label>Novo usuário ou nome</label>
+      <input type="text" id="loginInput" placeholder="Ex: Maria Silva" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">Entrar →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+  APP SCREEN
+══════════════════════════════ -->
+<div id="appScreen">
+  <nav class="topnav">
+    <div class="nav-brand">Agen<em>da</em></div>
+    <div class="nav-right">
+      <button class="btn btn-sm btn-sync" onclick="syncNow()" id="syncBtn">&#x27F3; Sync</button>
+      <button class="btn btn-icon btn-ghost" onclick="toggleTheme()" title="Alternar tema">
+        <span class="theme-icon" id="themeIcon">☀️</span>
+      </button>
+      <button class="btn btn-sm btn-ghost" onclick="openSwitchUser()">
+        <div class="avatar" id="navAvatar" style="width:24px;height:24px;font-size:10px"></div>
+        <span id="navUserName"></span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('month')">📅 Mês</button>
+    <button class="tab-btn" onclick="switchTab('week')">📆 Semana</button>
+    <button class="tab-btn" onclick="switchTab('search')">🔍 Buscar</button>
+    <button class="tab-btn" onclick="switchTab('stats')">📊 Relatórios</button>
+    <button class="tab-btn" onclick="switchTab('config')">⚙️ Config</button>
+  </div>
+
+  
+  <!-- SYNC STATUS BAR -->
+  <div id="syncBar">
+    <div class="sync-info">
+      <div class="sync-dot gray" id="syncDot"></div>
+      <span id="syncMsg">Google Sheets nao configurado</span>
+    </div>
+    <span id="lastSyncText" style="color:var(--text3);font-size:11px"></span>
+  </div>
+
+  <!-- ── TAB: MÊS ── -->
+  <div class="tab-content active" id="tab-month">
+    <!-- Notification prompt -->
+    <div id="notifBanner">
+      <span>🔔 Ativar notificações do navegador para lembretes no horário?</span>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn btn-sm btn-ghost" onclick="dismissNotif()">Não</button>
+        <button class="btn btn-sm btn-primary" onclick="requestNotif()">Ativar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="month-nav">
+        <div class="month-label" id="monthLabel"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-icon btn-ghost" onclick="changeMonth(-1)">‹</button>
+          <button class="btn btn-sm btn-ghost" onclick="goToday()">Hoje</button>
+          <button class="btn btn-icon btn-ghost" onclick="changeMonth(1)">›</button>
+        </div>
+      </div>
+      <div class="weekday-row">
+        <div class="wday">Dom</div><div class="wday">Seg</div><div class="wday">Ter</div>
+        <div class="wday">Qua</div><div class="wday">Qui</div><div class="wday">Sex</div>
+        <div class="wday">Sáb</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- Event form -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Novo Lembrete — <span id="selectedDateLabel" style="color:var(--green)">selecione um dia</span></div>
+      </div>
+      <div class="field">
+        <label>Descrição</label>
+        <input type="text" id="eventText" placeholder="O que você precisa lembrar?">
+      </div>
+      <div class="form-grid-3">
+        <div class="field">
+          <label>Horário</label>
+          <input type="time" id="eventTime">
+        </div>
+        <div class="field">
+          <label>Repetição</label>
+          <select id="repeat">
+            <option value="none">Sem repetição</option>
+            <option value="daily">Todo dia</option>
+            <option value="weekly">Toda semana</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Categoria</label>
+          <select id="eventCat">
+            <option value="work">💼 Trabalho</option>
+            <option value="personal">🏠 Pessoal</option>
+            <option value="health">💚 Saúde</option>
+            <option value="other">✨ Outro</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>WhatsApp (opcional)</label>
+        <input type="text" id="phone" placeholder="(11) 99999-9999">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="saveEvent()">Salvar Lembrete</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- Events of selected day -->
+    <div class="card" id="dayEventsCard" style="display:none">
+      <div class="card-header">
+        <div class="card-title" id="dayEventsTitle">Lembretes</div>
+      </div>
+      <div id="dayEventList"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: SEMANA ── -->
+  <div class="tab-content" id="tab-week">
+    <div class="card">
+      <div class="month-nav">
+        <div class="month-label" id="weekLabel"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-icon btn-ghost" onclick="changeWeek(-1)">‹</button>
+          <button class="btn btn-sm btn-ghost" onclick="goTodayWeek()">Hoje</button>
+          <button class="btn btn-icon btn-ghost" onclick="changeWeek(1)">›</button>
+        </div>
+      </div>
+      <div class="week-header" id="weekHeader"></div>
+      <div class="week-grid" id="weekGrid"></div>
+    </div>
+    <div class="card" id="weekDayCard" style="display:none">
+      <div class="card-header">
+        <div class="card-title" id="weekDayTitle">Lembretes</div>
+      </div>
+      <div id="weekDayList"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: BUSCA ── -->
+  <div class="tab-content" id="tab-search">
+    <div class="card">
+      <div class="card-title">Buscar Lembretes</div>
+      <div class="search-bar">
+        <div class="search-input-wrap" style="flex:1">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="searchInput" placeholder="Digite para buscar…" oninput="doSearch()">
+        </div>
+        <select id="searchCat" onchange="doSearch()" style="width:auto;padding:11px 14px">
+          <option value="">Todas categorias</option>
+          <option value="work">💼 Trabalho</option>
+          <option value="personal">🏠 Pessoal</option>
+          <option value="health">💚 Saúde</option>
+          <option value="other">✨ Outro</option>
+        </select>
+      </div>
+      <div id="searchResults"><div class="empty-state"><div class="empty-icon">🔍</div><p>Digite algo para buscar</p></div></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: RELATÓRIOS ── -->
+  <div class="tab-content" id="tab-stats">
+    <div class="card">
+      <div class="card-title">Resumo Geral</div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Por Categoria</div>
+      <div class="cat-legend" id="catLegend"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Exportar Dados</div>
+      </div>
+      <div class="export-btns">
+        <button class="btn btn-ghost" onclick="exportCSV()">⬇ Exportar CSV</button>
+        <button class="btn btn-ghost" onclick="exportJSON()">⬇ Exportar JSON</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmClearAll()">🗑 Apagar todos</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+  MODALS
+══════════════════════════════ -->
+
+<!-- Edit event -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Editar Lembrete</div>
+    <input type="hidden" id="editIdx">
+    <input type="hidden" id="editDate">
+    <div class="field"><label>Descrição</label><input type="text" id="editText"></div>
+    <div class="form-grid-2">
+      <div class="field"><label>Horário</label><input type="time" id="editTime"></div>
+      <div class="field"><label>Repetição</label>
+        <select id="editRepeat">
+          <option value="none">Sem repetição</option>
+          <option value="daily">Todo dia</option>
+          <option value="weekly">Toda semana</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Categoria</label>
+      <select id="editCat">
+        <option value="work">💼 Trabalho</option>
+        <option value="personal">🏠 Pessoal</option>
+        <option value="health">💚 Saúde</option>
+        <option value="other">✨ Outro</option>
+      </select>
+    </div>
+    <div class="field"><label>WhatsApp</label><input type="text" id="editPhone"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Drag target date picker -->
+<div class="modal-overlay" id="dragModal">
+  <div class="modal">
+    <div class="modal-title">📦 Mover Lembrete</div>
+    <p class="confirm-msg">Selecione a nova data para o lembrete:</p>
+    <div class="field"><label>Nova data</label><input type="date" id="dragTargetDate"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('dragModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmDrag()">Mover</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-title">🗑 Confirmar exclusão</div>
+    <p class="confirm-msg" id="confirmMsg">Tem certeza que deseja excluir este lembrete?</p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirmModal')">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Switch user -->
+<div class="modal-overlay" id="switchModal">
+  <div class="modal">
+    <div class="modal-title">👤 Trocar Usuário</div>
+    <div id="switchProfilesGrid" class="profiles-grid" style="margin-bottom:16px"></div>
+    <div class="field"><label>Ou entre com outro nome</label>
+      <input type="text" id="switchInput" placeholder="Nome do usuário" onkeydown="if(event.key==='Enter')switchToNew()">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('switchModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="switchToNew()">Entrar</button>
+    </div>
+  </div>
+
+  <!-- ── TAB: CONFIG ── -->
+  <div class="tab-content" id="tab-config">
+    <div class="card">
+      <div class="card-title">&#x1F517; Google Sheets &mdash; Integracao</div>
+      <div class="sheets-status" id="sheetsStatusBox">
+        <div class="sync-dot gray" id="cfgDot"></div>
+        <span id="cfgStatusText" style="font-size:13px;color:var(--text2)">Nao configurado</span>
+      </div>
+      <div class="field">
+        <label>URL do Apps Script</label>
+        <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        <span style="font-size:11px;color:var(--text3);margin-top:4px">Cole a URL gerada ao implantar como App da Web</span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+        <button class="btn btn-primary" onclick="saveConfig()">Salvar e Testar</button>
+        <button class="btn btn-ghost" onclick="clearConfig()">Limpar</button>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:14px">&#x1F4CB; Passo a passo</div>
+        <ol style="font-size:13px;color:var(--text2);line-height:2.2;padding-left:18px">
+          <li>Abra <strong style="color:var(--green)">script.google.com</strong> e crie novo projeto</li>
+          <li>Cole o conteudo do arquivo <code style="color:var(--cyan)">Code.gs</code> entregue</li>
+          <li>Salve e clique <strong>Implantar &rarr; Novo implantacao</strong></li>
+          <li>Tipo: <strong>App da Web</strong> | Executar como: <strong>Eu mesmo</strong></li>
+          <li>Acesso: <strong>Qualquer pessoa</strong> &rarr; Implantar</li>
+          <li>Copie a URL e cole acima &rarr; <strong>Salvar e Testar</strong></li>
+        </ol>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">&#x2699;&#xFE0F; Configuracoes de Sync</div>
+        <div class="field">
+          <label>Auto-sync a cada</label>
+          <select id="syncInterval">
+            <option value="1">1 minuto</option>
+            <option value="5" selected>5 minutos</option>
+            <option value="15">15 minutos</option>
+            <option value="30">30 minutos</option>
+            <option value="0">Desativado</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <input type="checkbox" id="cfgSyncOnSave" checked style="width:auto;padding:0">
+          <label style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--text)">Sincronizar ao salvar lembrete</label>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="saveSyncSettings()">Salvar preferencias</button>
+      </div>
+    </div>
+    <div class="card" id="conflictsCard" style="display:none">
+      <div class="card-title">&#x26A0;&#xFE0F; Conflitos Detectados</div>
+      <div id="conflictsList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#x1F4CA; Log de Sincronizacao</div>
+      <div id="syncLogList" style="font-size:12px;color:var(--text2);line-height:2"></div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE & CONSTANTS
+// ══════════════════════════════════════════
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CAT_COLORS = { work:'#22d3ee', personal:'#a78bfa', health:'#4ade80', other:'#fb923c' };
+const CAT_LABELS = { work:'Trabalho', personal:'Pessoal', health:'Saúde', other:'Outro' };
+const REPEAT_LABELS = { none:'', daily:'Diário', weekly:'Semanal' };
+const BADGE_COLORS = { daily:'rgba(34,211,238,.15)', weekly:'rgba(167,139,250,.15)' };
+const BADGE_TEXT  = { daily:'#22d3ee', weekly:'#a78bfa' };
+
+let currentUser = null;
+let selectedDate = null;
+let viewDate = new Date();
+let weekStart = getWeekStart(new Date());
+let dragSource = null; // { date, idx }
+let confirmCallback = null;
+
+// ══════════════════════════════════════════
+// STORAGE HELPERS
+// ══════════════════════════════════════════
+function key(date) { return currentUser + '_ev_' + date; }
+function getEvents(date) { try { return JSON.parse(localStorage.getItem(key(date))) || []; } catch { return []; } }
+function setEvents(date, ev) {
+  if (ev.length === 0) localStorage.removeItem(key(date));
+  else localStorage.setItem(key(date), JSON.stringify(ev));
+}
+
+function getAllEvents() {
+  const results = [];
+  Object.keys(localStorage).forEach(k => {
+    if (!k.startsWith(currentUser + '_ev_')) return;
+    const date = k.replace(currentUser + '_ev_', '');
+    const ev = getEvents(date);
+    ev.forEach((e,i) => results.push({ date, idx:i, ...e }));
+  });
+  return results.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function getSavedProfiles() { try { return JSON.parse(localStorage.getItem('_profiles_')) || []; } catch { return []; } }
+function saveProfile(name) {
+  const p = getSavedProfiles();
+  if (!p.includes(name)) { p.push(name); localStorage.setItem('_profiles_', JSON.stringify(p)); }
+}
+function removeProfile(name) {
+  let p = getSavedProfiles().filter(n => n !== name);
+  localStorage.setItem('_profiles_', JSON.stringify(p));
+  // delete user events
+  Object.keys(localStorage).filter(k => k.startsWith(name + '_ev_')).forEach(k => localStorage.removeItem(k));
+}
+
+// ══════════════════════════════════════════
+// LOGIN / USERS
+// ══════════════════════════════════════════
+function renderLoginProfiles() {
+  const profiles = getSavedProfiles();
+  const wrap = document.getElementById('savedProfilesWrap');
+  const grid = document.getElementById('profilesGrid');
+  if (profiles.length === 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  grid.innerHTML = '';
+  profiles.forEach(name => {
+    const chip = document.createElement('div');
+    chip.className = 'profile-chip';
+    chip.innerHTML = `<div class="mini-av" style="background:${avatarColor(name)};color:#08090f">${getInitials(name)}</div>${name}<button class="rm-btn" title="Remover perfil" onclick="event.stopPropagation();deleteProfile('${name}')">×</button>`;
+    chip.onclick = () => loginAs(name);
+    grid.appendChild(chip);
+  });
+}
+
+function deleteProfile(name) {
+  if (!confirm(`Remover perfil "${name}" e todos os seus dados?`)) return;
+  removeProfile(name);
+  renderLoginProfiles();
+}
+
+function doLogin() {
+  const name = document.getElementById('loginInput').value.trim();
+  if (!name) { showToast('Digite um nome', 'error'); return; }
+  loginAs(name);
+}
+
+function loginAs(name) {
+  currentUser = name;
+  localStorage.setItem('currentUser', name);
+  saveProfile(name);
+  document.getElementById('loginScreen').style.display = 'none';
+  const app = document.getElementById('appScreen');
+  app.classList.add('visible');
+  document.getElementById('navAvatar').textContent = getInitials(name);
+  document.getElementById('navAvatar').style.background = avatarColor(name);
+  document.getElementById('navUserName').textContent = name;
+  viewDate = new Date();
+  weekStart = getWeekStart(new Date());
+  selectedDate = null;
+  document.getElementById('selectedDateLabel').textContent = 'selecione um dia';
+  generateCalendar();
+  generateWeek();
+  updateStats();
+  checkNotifPermission();
+  startNotifChecker();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  document.getElementById('appScreen').classList.remove('visible');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginInput').value = '';
+  renderLoginProfiles();
+}
+
+function openSwitchUser() {
+  const grid = document.getElementById('switchProfilesGrid');
+  grid.innerHTML = '';
+  getSavedProfiles().forEach(name => {
+    const chip = document.createElement('div');
+    chip.className = 'profile-chip';
+    chip.innerHTML = `<div class="mini-av" style="background:${avatarColor(name)};color:#08090f">${getInitials(name)}</div>${name}`;
+    chip.onclick = () => { closeModal('switchModal'); loginAs(name); };
+    grid.appendChild(chip);
+  });
+  openModal('switchModal');
+}
+
+function switchToNew() {
+  const name = document.getElementById('switchInput').value.trim();
+  if (!name) return;
+  closeModal('switchModal');
+  loginAs(name);
+}
+
+// ══════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+  localStorage.setItem('_theme_', isDark ? 'dark' : 'light');
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    const tabs = ['month','week','search','stats'];
+    b.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'week') generateWeek();
+  if (name === 'stats') updateStats();
+  if (name === 'search') { document.getElementById('searchInput').value=''; renderSearchResults([]); }
+}
+
+// ══════════════════════════════════════════
+// CALENDAR — MONTH VIEW
+// ══════════════════════════════════════════
+function generateCalendar() {
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const y = viewDate.getFullYear(), m = viewDate.getMonth();
+  document.getElementById('monthLabel').textContent = MONTHS[m] + ' ' + y;
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const today = new Date();
+
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div'); el.className = 'day empty'; grid.appendChild(el);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = fmtDate(y, m + 1, d);
+    const el = document.createElement('div'); el.className = 'day';
+    el.textContent = d;
+    el.dataset.date = ds;
+
+    const ev = getEvents(ds);
+    if (ev.length) {
+      const dotsWrap = document.createElement('div'); dotsWrap.className = 'day-dots';
+      [...new Set(ev.map(e => e.cat || 'other'))].slice(0,3).forEach(cat => {
+        const dot = document.createElement('div');
+        dot.className = 'day-dot';
+        dot.style.background = CAT_COLORS[cat] || CAT_COLORS.other;
+        dotsWrap.appendChild(dot);
+      });
+      el.appendChild(dotsWrap);
+    }
+
+    if (d === today.getDate() && m === today.getMonth() && y === today.getFullYear()) el.classList.add('today');
+    if (selectedDate === ds) el.classList.add('selected');
+
+    el.onclick = () => selectDay(ds, el);
+
+    // drag & drop
+    el.ondragover = e => { e.preventDefault(); el.classList.add('drag-over'); };
+    el.ondragleave = () => el.classList.remove('drag-over');
+    el.ondrop = e => { e.preventDefault(); el.classList.remove('drag-over'); handleDropOnDay(ds); };
+
+    grid.appendChild(el);
+  }
+}
+
+function selectDay(ds, el) {
+  selectedDate = ds;
+  document.querySelectorAll('.day.selected').forEach(d => d.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+  const [y, m, d] = ds.split('-');
+  document.getElementById('selectedDateLabel').textContent = `${d}/${m}/${y}`;
+  showDayEvents();
+}
+
+function changeMonth(delta) {
+  viewDate.setMonth(viewDate.getMonth() + delta);
+  generateCalendar();
+}
+function goToday() {
+  viewDate = new Date();
+  generateCalendar();
+}
+
+// ══════════════════════════════════════════
+// CALENDAR — WEEK VIEW
+// ══════════════════════════════════════════
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function generateWeek() {
+  const header = document.getElementById('weekHeader');
+  const grid = document.getElementById('weekGrid');
+  header.innerHTML = ''; grid.innerHTML = '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  // Label
+  const ws = new Date(weekStart), we = new Date(weekStart);
+  we.setDate(we.getDate() + 6);
+  document.getElementById('weekLabel').textContent =
+    `${ws.getDate()} ${MONTHS[ws.getMonth()].slice(0,3)} – ${we.getDate()} ${MONTHS[we.getMonth()].slice(0,3)} ${we.getFullYear()}`;
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i);
+    const ds = fmtDate(d.getFullYear(), d.getMonth()+1, d.getDate());
+    const isToday = d.getTime() === today.getTime();
+    const isSel = selectedDate === ds;
+
+    // header col
+    const hcol = document.createElement('div');
+    hcol.className = 'week-col-head' + (isToday ? ' today-col' : '') + (isSel ? ' selected-col' : '');
+    hcol.innerHTML = `<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px">${days[i]}</div><div style="font-size:18px;font-weight:700;margin-top:2px">${d.getDate()}</div>`;
+    header.appendChild(hcol);
+
+    // day col
+    const col = document.createElement('div');
+    col.className = 'week-day-col' + (isToday ? ' today-col' : '') + (isSel ? ' selected-col' : '');
+    col.dataset.date = ds;
+    col.onclick = () => { selectWeekDay(ds); };
+    col.ondragover = e => { e.preventDefault(); col.classList.add('drag-over'); };
+    col.ondragleave = () => col.classList.remove('drag-over');
+    col.ondrop = e => { e.preventDefault(); col.classList.remove('drag-over'); handleDropOnDay(ds); };
+
+    const ev = getEvents(ds);
+    ev.forEach((e, idx) => {
+      const chip = document.createElement('div');
+      chip.className = 'week-event-chip';
+      chip.style.background = (CAT_COLORS[e.cat||'other'] + '25');
+      chip.style.color = CAT_COLORS[e.cat||'other'];
+      chip.textContent = (e.time ? e.time + ' ' : '') + e.text;
+      chip.draggable = true;
+      chip.ondragstart = ev2 => { ev2.stopPropagation(); dragSource = { date:ds, idx }; };
+      col.appendChild(chip);
+    });
+    grid.appendChild(col);
+  }
+}
+
+function selectWeekDay(ds) {
+  selectedDate = ds;
+  generateWeek();
+  showWeekDayEvents(ds);
+}
+
+function showWeekDayEvents(ds) {
+  const [y,m,d] = ds.split('-');
+  document.getElementById('weekDayTitle').textContent = `Lembretes — ${d}/${m}/${y}`;
+  const list = document.getElementById('weekDayList');
+  list.innerHTML = '';
+  const ev = getEvents(ds);
+  if (!ev.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Nenhum lembrete neste dia</p></div>'; }
+  else ev.forEach((e,i) => list.appendChild(buildEventItem(e, i, ds, () => { showWeekDayEvents(ds); generateWeek(); updateStats(); })));
+  document.getElementById('weekDayCard').style.display = 'block';
+}
+
+function changeWeek(delta) { weekStart.setDate(weekStart.getDate() + delta*7); generateWeek(); }
+function goTodayWeek() { weekStart = getWeekStart(new Date()); generateWeek(); }
+
+// ══════════════════════════════════════════
+// SAVE / DELETE / EDIT EVENTS
+// ══════════════════════════════════════════
+function saveEvent() {
+  if (!selectedDate) { showToast('Selecione um dia no calendário', 'error'); return; }
+  const text = document.getElementById('eventText').value.trim();
+  if (!text) { showToast('Digite a descrição do lembrete', 'error'); return; }
+  const ev = getEvents(selectedDate);
+  ev.push({
+    text,
+    time: document.getElementById('eventTime').value,
+    repeat: document.getElementById('repeat').value,
+    cat: document.getElementById('eventCat').value,
+    phone: document.getElementById('phone').value.trim(),
+  });
+  setEvents(selectedDate, ev);
+  clearForm();
+  showToast('✓ Lembrete salvo!', 'success');
+  generateCalendar();
+  showDayEvents();
+  updateStats();
+  scheduleNotif(ev[ev.length-1], selectedDate);
+}
+
+function clearForm() {
+  ['eventText','eventTime','phone'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('repeat').value = 'none';
+  document.getElementById('eventCat').value = 'work';
+}
+
+function deleteEvent(date, idx, afterFn) {
+  openConfirm('Tem certeza que deseja excluir este lembrete?', () => {
+    const ev = getEvents(date);
+    ev.splice(idx, 1);
+    setEvents(date, ev);
+    showToast('Lembrete removido', 'info');
+    generateCalendar();
+    updateStats();
+    if (afterFn) afterFn();
+  });
+}
+
+function openEditModal(date, idx) {
+  const ev = getEvents(date)[idx];
+  if (!ev) return;
+  document.getElementById('editIdx').value = idx;
+  document.getElementById('editDate').value = date;
+  document.getElementById('editText').value = ev.text;
+  document.getElementById('editTime').value = ev.time || '';
+  document.getElementById('editRepeat').value = ev.repeat || 'none';
+  document.getElementById('editCat').value = ev.cat || 'other';
+  document.getElementById('editPhone').value = ev.phone || '';
+  openModal('editModal');
+}
+
+function saveEdit() {
+  const idx = parseInt(document.getElementById('editIdx').value);
+  const date = document.getElementById('editDate').value;
+  const ev = getEvents(date);
+  if (!ev[idx]) return;
+  ev[idx] = {
+    text: document.getElementById('editText').value.trim(),
+    time: document.getElementById('editTime').value,
+    repeat: document.getElementById('editRepeat').value,
+    cat: document.getElementById('editCat').value,
+    phone: document.getElementById('editPhone').value.trim(),
+  };
+  setEvents(date, ev);
+  closeModal('editModal');
+  showToast('✓ Lembrete atualizado!', 'success');
+  generateCalendar();
+  showDayEvents();
+  generateWeek();
+  updateStats();
+}
+
+// ══════════════════════════════════════════
+// RENDER EVENT LIST
+// ══════════════════════════════════════════
+function buildEventItem(e, idx, date, refreshFn) {
+  const item = document.createElement('div');
+  item.className = 'event-item';
+  item.draggable = true;
+  item.ondragstart = () => { dragSource = { date, idx }; item.classList.add('dragging'); };
+  item.ondragend = () => item.classList.remove('dragging');
+
+  const color = CAT_COLORS[e.cat || 'other'];
+  const rLabel = REPEAT_LABELS[e.repeat] || '';
+  const badge = rLabel ? `<span class="badge" style="background:${BADGE_COLORS[e.repeat]||'transparent'};color:${BADGE_TEXT[e.repeat]||'inherit'}">${rLabel}</span>` : '';
+
+  item.innerHTML = `
+    <div class="event-color-bar" style="background:${color}"></div>
+    <div class="event-body">
+      <div class="event-text">${escHtml(e.text)} ${badge}</div>
+      <div class="event-meta">
+        ${e.time ? `<span>⏰ ${e.time}</span>` : ''}
+        ${e.phone ? `<span>📱 ${escHtml(e.phone)}</span>` : ''}
+        <span style="color:${color}">${CAT_LABELS[e.cat||'other']}</span>
+      </div>
+    </div>
+    <div class="event-actions">
+      <button class="btn btn-sm btn-ghost" onclick="openEditModal('${date}',${idx})">✏️</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteEvent('${date}',${idx},()=>{${refreshFn.toString().includes('showWeekDay') ? 'showWeekDayEvents(\''+date+'\')' : 'showDayEvents()'}; generateWeek(); updateStats();})">🗑</button>
+    </div>`;
+  return item;
+}
+
+function showDayEvents() {
+  if (!selectedDate) return;
+  const [y,m,d] = selectedDate.split('-');
+  document.getElementById('dayEventsTitle').textContent = `Lembretes — ${d}/${m}/${y}`;
+  const list = document.getElementById('dayEventList');
+  list.innerHTML = '';
+  const ev = getEvents(selectedDate);
+  if (!ev.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><p>Nenhum lembrete neste dia</p></div>'; }
+  else ev.forEach((e, i) => list.appendChild(buildEventItem(e, i, selectedDate, showDayEvents)));
+  document.getElementById('dayEventsCard').style.display = 'block';
+}
+
+// ══════════════════════════════════════════
+// DRAG & DROP
+// ══════════════════════════════════════════
+function handleDropOnDay(targetDate) {
+  if (!dragSource || dragSource.date === targetDate) { dragSource = null; return; }
+  const srcEv = getEvents(dragSource.date);
+  const moved = srcEv.splice(dragSource.idx, 1)[0];
+  setEvents(dragSource.date, srcEv);
+  const tgtEv = getEvents(targetDate);
+  tgtEv.push(moved);
+  setEvents(targetDate, tgtEv);
+  dragSource = null;
+  showToast('Lembrete movido!', 'info');
+  generateCalendar();
+  generateWeek();
+  if (selectedDate) showDayEvents();
+  updateStats();
+}
+
+// ══════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const cat = document.getElementById('searchCat').value;
+  if (!q && !cat) { renderSearchResults([]); return; }
+  const all = getAllEvents().filter(e =>
+    (!q || e.text.toLowerCase().includes(q)) &&
+    (!cat || (e.cat || 'other') === cat)
+  );
+  renderSearchResults(all);
+}
+
+function renderSearchResults(results) {
+  const el = document.getElementById('searchResults');
+  if (!results.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><p>Nenhum resultado encontrado</p></div>';
+    return;
+  }
+  el.innerHTML = '';
+  results.forEach(e => {
+    const div = document.createElement('div'); div.className = 'search-result-item';
+    const [y,m,d] = e.date.split('-');
+    div.innerHTML = `<div class="search-date">${d}/${m}/${y}</div>
+      <div style="font-size:14px;font-weight:500">${escHtml(e.text)}</div>
+      <div class="event-meta" style="margin-top:4px">
+        ${e.time ? `<span>⏰ ${e.time}</span>` : ''}
+        <span style="color:${CAT_COLORS[e.cat||'other']}">${CAT_LABELS[e.cat||'other']}</span>
+      </div>`;
+    div.onclick = () => {
+      switchTab('month');
+      const d2 = new Date(e.date + 'T00:00:00');
+      viewDate = new Date(d2.getFullYear(), d2.getMonth(), 1);
+      generateCalendar();
+      setTimeout(() => {
+        const el2 = document.querySelector(`.day[data-date="${e.date}"]`);
+        selectDay(e.date, el2);
+        el2?.scrollIntoView({ behavior:'smooth', block:'center' });
+      }, 100);
+    };
+    el.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════
+function updateStats() {
+  if (!currentUser) return;
+  const all = getAllEvents();
+  const total = all.length;
+  const daily = all.filter(e => e.repeat === 'daily').length;
+  const weekly = all.filter(e => e.repeat === 'weekly').length;
+  const thisMonth = all.filter(e => {
+    const d = new Date(e.date); const n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
+  }).length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--cyan)">${thisMonth}</div><div class="stat-label">Este mês</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--orange)">${daily}</div><div class="stat-label">Diários</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--purple)">${weekly}</div><div class="stat-label">Semanais</div></div>`;
+
+  const catCount = { work:0, personal:0, health:0, other:0 };
+  all.forEach(e => { catCount[e.cat || 'other']++; });
+  const legend = document.getElementById('catLegend');
+  legend.innerHTML = '';
+  Object.entries(catCount).forEach(([cat, count]) => {
+    const div = document.createElement('div'); div.className = 'cat-item';
+    div.innerHTML = `<div class="cat-dot" style="background:${CAT_COLORS[cat]}"></div>${CAT_LABELS[cat]}: <strong>${count}</strong>`;
+    legend.appendChild(div);
+  });
+
+  // update user sub in nav
+  const nav = document.getElementById('navUserName');
+  if (nav) nav.textContent = currentUser;
+}
+
+// ══════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════
+function exportCSV() {
+  const all = getAllEvents();
+  const rows = [['Data','Descrição','Horário','Repetição','Categoria','WhatsApp']];
+  all.forEach(e => rows.push([e.date, e.text, e.time||'', REPEAT_LABELS[e.repeat]||'', CAT_LABELS[e.cat||'other'], e.phone||'']));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  download('agenda_' + currentUser + '.csv', csv, 'text/csv');
+  showToast('CSV exportado!', 'success');
+}
+
+function exportJSON() {
+  const all = getAllEvents();
+  download('agenda_' + currentUser + '.json', JSON.stringify(all, null, 2), 'application/json');
+  showToast('JSON exportado!', 'success');
+}
+
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name; a.click();
+}
+
+function confirmClearAll() {
+  openConfirm(`Apagar TODOS os ${getAllEvents().length} lembretes de ${currentUser}? Essa ação não pode ser desfeita.`, () => {
+    Object.keys(localStorage).filter(k => k.startsWith(currentUser + '_ev_')).forEach(k => localStorage.removeItem(k));
+    showToast('Todos os lembretes foram apagados', 'error');
+    generateCalendar(); generateWeek(); updateStats();
+    selectedDate = null;
+    document.getElementById('dayEventsCard').style.display = 'none';
+    document.getElementById('weekDayCard').style.display = 'none';
+  });
+}
+
+// ══════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════
+function checkNotifPermission() {
+  const banner = document.getElementById('notifBanner');
+  if (!('Notification' in window) || Notification.permission !== 'default') {
+    banner.style.display = 'none';
+  }
+}
+
+function requestNotif() {
+  Notification.requestPermission().then(p => {
+    document.getElementById('notifBanner').style.display = 'none';
+    if (p === 'granted') showToast('🔔 Notificações ativadas!', 'success');
+  });
+}
+
+function dismissNotif() {
+  document.getElementById('notifBanner').style.display = 'none';
+  localStorage.setItem('_notifDismissed_', '1');
+}
+
+function scheduleNotif(event, date) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!event.time) return;
+  const [h, m] = event.time.split(':');
+  const target = new Date(date + 'T' + event.time);
+  const diff = target - Date.now();
+  if (diff > 0 && diff < 86400000) {
+    setTimeout(() => {
+      new Notification('📅 Lembrete: ' + event.text, { body: event.time + ' — ' + (CAT_LABELS[event.cat] || '') });
+    }, diff);
+  }
+}
+
+function startNotifChecker() {
+  setInterval(() => {
+    if (!currentUser) return;
+    const now = new Date();
+    const todayStr = fmtDate(now.getFullYear(), now.getMonth()+1, now.getDate());
+    getEvents(todayStr).forEach(e => {
+      if (!e.time || !e.phone) return;
+      const [h, m] = e.time.split(':');
+      if (now.getHours() == h && now.getMinutes() == m) {
+        const clean = e.phone.replace(/\D/g,'');
+        const url = `https://wa.me/${clean}?text=${encodeURIComponent('Lembrete: ' + e.text)}`;
+        window.open(url, '_blank');
+      }
+    });
+  }, 60000);
+}
+
+// ══════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openConfirm(msg, cb) {
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  document.getElementById('confirmOkBtn').onclick = () => { closeModal('confirmModal'); cb(); };
+  openModal('confirmModal');
+}
+
+// close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function fmtDate(y, m, d) { return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function escHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function getInitials(n) { return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+function avatarColor(name) {
+  const cols = ['#4ade80','#22d3ee','#a78bfa','#fb923c','#f472b6','#facc15'];
+  let h = 0; for (const c of name) h = (h * 31 + c.charCodeAt(0)) % cols.length;
+  return cols[h];
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `${type} show`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ══════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════
+(function boot() {
+  // restore theme
+  const savedTheme = localStorage.getItem('_theme_') || 'dark';
+  isDark = savedTheme === 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+
+  // hide notif banner if dismissed
+  if (localStorage.getItem('_notifDismissed_')) {
+    document.getElementById('notifBanner').style.display = 'none';
+  }
+
+  renderLoginProfiles();
+
+  const saved = localStorage.getItem('currentUser');
+  if (saved) { loginAs(saved); }
+})();
+
+// PWA Service Worker
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
+
+</script>
+</body>
+</html>
