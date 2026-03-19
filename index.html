@@ -771,17 +771,25 @@ input[type=url]:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3p
   <div class="tab-content" id="tab-config">
     <div class="card">
       <div class="card-title">&#x1F517; Google Sheets &mdash; Integracao</div>
+
       <div class="sheets-status" id="sheetsStatusBox">
         <div class="sync-dot gray" id="cfgDot"></div>
         <span id="cfgStatusText" style="font-size:13px;color:var(--text2)">Nao configurado</span>
       </div>
-      <div class="field">
-        <label>URL do Apps Script</label>
-        <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
-        <span style="font-size:11px;color:var(--text3);margin-top:4px">Cole a URL gerada ao implantar como App da Web</span>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-        <button class="btn btn-primary" onclick="saveConfig()">Salvar e Testar</button>
+
+      <p style="font-size:14px;color:var(--text);margin-bottom:12px;font-weight:500">
+        Cole aqui a URL do seu Apps Script:
+      </p>
+      <input type="text" id="cfgUrl"
+        placeholder="https://script.google.com/macros/s/.../exec"
+        style="display:block;width:100%;font-size:13px;border:2px solid var(--green);padding:13px 14px;border-radius:10px;background:var(--surface2);color:var(--text);margin-bottom:8px">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:18px">
+        Exemplo: https://script.google.com/macros/s/AKfycby.../exec
+      </p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+        <button class="btn btn-primary" onclick="saveConfig()" style="font-size:15px;padding:13px 28px">
+          Salvar e Testar
+        </button>
         <button class="btn btn-ghost" onclick="clearConfig()">Limpar</button>
       </div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
@@ -985,7 +993,15 @@ function switchTab(name) {
   if (name === 'week') generateWeek();
   if (name === 'stats') updateStats();
   if (name === 'search') { document.getElementById('searchInput').value=''; renderSearchResults([]); }
-  if (name === 'config') updateSyncBar && updateSyncBar();
+  if (name === 'config') {
+    if(typeof updateSyncBar === 'function') updateSyncBar();
+    // populate URL field
+    setTimeout(function(){
+      var el = document.getElementById('cfgUrl');
+      var url = typeof getSyncUrl === 'function' ? getSyncUrl() : '';
+      if(el && url) el.value = url;
+    }, 50);
+  }
 }
 
 // ══════════════════════════════════════════
