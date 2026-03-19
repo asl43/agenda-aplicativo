@@ -976,14 +976,16 @@ function toggleTheme() {
 // ══════════════════════════════════════════
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    const tabs = ['month','week','search','stats'];
+    const tabs = ['month','week','search','stats','config'];
     b.classList.toggle('active', tabs[i] === name);
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById('tab-' + name).classList.add('active');
+  const tabEl = document.getElementById('tab-' + name);
+  if (tabEl) tabEl.classList.add('active');
   if (name === 'week') generateWeek();
   if (name === 'stats') updateStats();
   if (name === 'search') { document.getElementById('searchInput').value=''; renderSearchResults([]); }
+  if (name === 'config') updateSyncBar && updateSyncBar();
 }
 
 // ══════════════════════════════════════════
